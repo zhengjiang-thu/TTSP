@@ -12,11 +12,22 @@ class PerRoundResult:
     round_idx: int
     traces: List[Dict[str, Any]] = field(default_factory=list)          # All traces generated
     filtered_traces: List[Dict[str, Any]] = field(default_factory=list) # Traces that passed filter
-    visual_facts: Optional[str] = None   # Extracted facts (None for last round)
+    evidence_ledger: Optional[str] = None  # Updated ledger (None for last round)
+    ledger_tokens: int = 0
     voting_results: Dict[str, Any] = field(default_factory=dict)        # Cumulative voting up to this round
+    trace_tokens: int = 0
     total_tokens: int = 0
     generation_time: float = 0.0
     filtering_ratio: float = 0.0         # fraction filtered out
+
+    @property
+    def visual_facts(self) -> Optional[str]:
+        """Deprecated alias retained for initial-release result readers."""
+        return self.evidence_ledger
+
+    @visual_facts.setter
+    def visual_facts(self, value: Optional[str]) -> None:
+        self.evidence_ledger = value
 
 
 @dataclass
@@ -35,6 +46,8 @@ class TTSPOutput:
 
     # Statistics
     total_traces_count: int = 0
+    total_trace_tokens: int = 0
+    total_ledger_tokens: int = 0
     total_tokens: int = 0
     avg_tokens_per_trace: float = 0.0
 
@@ -55,14 +68,20 @@ class TTSPOutput:
                 for r in self.per_round_results
             },
             "all_traces": self.all_traces,
-            "per_round_facts": [r.visual_facts for r in self.per_round_results],
+            "per_round_ledgers": [r.evidence_ledger for r in self.per_round_results],
+            # Compatibility key for result files produced by the initial release.
+            "per_round_facts": [r.evidence_ledger for r in self.per_round_results],
             "total_traces_count": self.total_traces_count,
             "token_stats": {
                 "total_tokens": self.total_tokens,
+                "trace_tokens": self.total_trace_tokens,
+                "ledger_tokens": self.total_ledger_tokens,
                 "avg_tokens_per_trace": self.avg_tokens_per_trace,
             },
             "timing_stats": {
                 "generation_time": self.generation_time,
+                "ledger_update_time": self.extraction_time,
+                # Compatibility key for initial-release result readers.
                 "extraction_time": self.extraction_time,
                 "total_time": self.total_time,
             },
@@ -71,13 +90,13 @@ class TTSPOutput:
         }
 
     def to_debug_dict(self) -> Dict[str, Any]:
-        """Export full debug info including generated texts and knowledge."""
+        """Export full debug info including generated texts and ledgers."""
         return {
             "voting_results": self.voting_results,
             "per_round_results": [
                 {
                     "round_idx": r.round_idx,
-                    "visual_facts": r.visual_facts,
+                    "evidence_ledger": r.evidence_ledger,
                     "traces": [
                         {
                             "trace_id": t.get("trace_id"),
@@ -86,11 +105,13 @@ class TTSPOutput:
                             "extracted_answer": t.get("extracted_answer"),
                             "num_tokens": t.get("num_tokens"),
                             "num_turns": t.get("num_turns"),
-                            "visual_facts_input": t.get("visual_facts_input"),
+                            "evidence_ledger_input": t.get("evidence_ledger_input"),
                         }
                         for t in r.traces
                     ],
                     "filtered_trace_ids": [t.get("trace_id") for t in r.filtered_traces],
+                    "trace_tokens": r.trace_tokens,
+                    "ledger_tokens": r.ledger_tokens,
                     "total_tokens": r.total_tokens,
                     "generation_time": r.generation_time,
                     "filtering_ratio": r.filtering_ratio,
@@ -104,7 +125,7 @@ class TTSPOutput:
                     "texts": t.get("texts"),
                     "extracted_answer": t.get("extracted_answer"),
                     "num_tokens": t.get("num_tokens"),
-                    "visual_facts_input": t.get("visual_facts_input"),
+                    "evidence_ledger_input": t.get("evidence_ledger_input"),
                 }
                 for t in self.all_traces
             ],
@@ -116,7 +137,10 @@ class TTSPOutput:
         print("\n=== TTSP Summary ===")
         print(f"Rounds: {len(self.per_round_results)}")
         print(f"Total traces: {self.total_traces_count}")
-        print(f"Total tokens: {self.total_tokens}")
+        print(
+            f"Total tokens: {self.total_tokens} "
+            f"(traces={self.total_trace_tokens}, ledger={self.total_ledger_tokens})"
+        )
         if self.generation_time > 0:
             print(f"Generation time: {self.generation_time:.2f}s")
         print(f"Total time: {self.total_time:.2f}s")

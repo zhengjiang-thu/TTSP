@@ -3,8 +3,6 @@ Batch inference loop for TTSP parallel perception.
 Handles multi-turn generation with image_zoom_in_tool calls.
 """
 import copy
-import json
-import os
 import tempfile
 from typing import List, Optional, Callable, Dict, Any, Tuple
 from vllm import SamplingParams
@@ -38,7 +36,7 @@ class TraceState:
         self.sampling_params = sampling_params
         self.image_paths = copy.deepcopy(image_paths)
         self.sample_name = sample_name  # per-trace sample name for cross-sample batching
-        self.is_fresh = is_fresh  # whether this trace was generated without knowledge
+        self.is_fresh = is_fresh  # whether this trace used the independent prompt
 
         self.vllm_outputs: List[Any] = []
         self.turn_texts: List[str] = []

@@ -7,7 +7,7 @@ import math
 import json
 import tempfile
 import traceback
-from typing import Optional, Tuple, Dict, Any, List
+from typing import Optional, Tuple, List
 from PIL import Image
 
 
@@ -171,6 +171,6 @@ def execute_tool_call(
         )
         desc = f"Zoomed in on: {label} (image {img_idx})"
         return True, cropped_path, cropped, desc, bbox
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
         return False, None, None, "", None

@@ -11,7 +11,7 @@ from typing import List, Dict, Tuple, Optional
 
 import pandas as pd
 from PIL import Image
-from datasets import load_dataset
+from datasets import load_dataset as load_hf_dataset
 
 
 # ============= VSTAR =============
@@ -119,7 +119,7 @@ def load_treebench_dataset(
         df = pd.read_csv(treebench_path, sep='\t')
     else:
         # Load from HuggingFace Hub
-        df = load_dataset("HaochenWang/TreeBench", split="train").to_pandas()
+        df = load_hf_dataset("HaochenWang/TreeBench", split="train").to_pandas()
     
     if category:
         df = df[df['category'] == category]

@@ -23,19 +23,19 @@ CORE_DEPENDENCIES = [
 
 setup(
     name="ttsp",
-    version="1.0.0",
+    version="2.0.0",
     author="Zheng Jiang",
     author_email="jz24@mails.tsinghua.edu.cn",
     description="Test-Time Scaling over Perception: Resolving the Grounding Paradox in Thinking with Images",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/ttsp",
+    url="https://github.com/jiangz24/TTSP",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

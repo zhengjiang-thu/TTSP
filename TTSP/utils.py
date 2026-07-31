@@ -6,7 +6,6 @@ and file saving.
 import os
 import json
 import math
-import numpy as np
 from typing import List, Dict, Any, Optional
 
 from .reliability import calculate_token_entropies
@@ -322,8 +321,13 @@ def save_trace_details(all_results: List[Dict], args):
                     'round_idx': t.get('round_idx'),
                     'pred_answer': t.get('extracted_answer'),
                     'turn_boundaries': t.get('turn_boundaries'),
-                    'entropy': [round(e, 6) for e in t.get('token_entropies', [])],
-                    'visual_facts_input': t.get('visual_facts_input'),
+                    'entropy': [
+                        round(e, 6) if e is not None else None
+                        for e in t.get('token_entropies', [])
+                    ],
+                    'evidence_ledger_input': t.get('evidence_ledger_input'),
+                    # Compatibility key for initial-release analysis scripts.
+                    'visual_facts_input': t.get('evidence_ledger_input'),
                 }, ensure_ascii=False) + '\n')
     print(f"Traces saved: {path}")
 

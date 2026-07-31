@@ -39,7 +39,7 @@ def process_dataset(data_source, pipeline, args, actual_subset, dataset_type):
         top_p=args.top_p,
         top_k=args.top_k,
         max_tokens=args.max_tokens,
-        logprobs=10,
+        logprobs=args.entropy_top_k,
     )
 
     # --- Run cross-sample batch pipeline ---
@@ -54,10 +54,14 @@ def process_dataset(data_source, pipeline, args, actual_subset, dataset_type):
         reasoning_effort=args.reasoning_effort,
         dataset_name=actual_subset,
         save_zoom_images=args.save_zoom_images,
-        max_extraction_traces=args.max_extraction_traces,
+        max_ledger_traces=args.max_ledger_traces,
         save_debug_details=args.save_debug_details,
         fresh_exploration_ratio=args.fresh_exploration_ratio,
-        max_previous_knowledge_chars=args.max_previous_knowledge_chars,
+        max_previous_ledger_chars=args.max_previous_ledger_chars,
+        entropy_top_k=args.entropy_top_k,
+        critical_positions=args.critical_positions,
+        confirmed_ledger_cap=args.confirmed_ledger_cap,
+        conflict_ledger_cap=args.conflict_ledger_cap,
     )
 
     # --- Per-sample evaluation ---
@@ -115,7 +119,7 @@ def main():
     parser = argparse.ArgumentParser(description='TTSP: Test-Time Scaling over Perception')
 
     # Model & dataset
-    parser.add_argument('--model', type=str, default='Qwen3-VL-8B-Thinking')
+    parser.add_argument('--model', type=str, default='Qwen3-VL-8B-Instruct')
     parser.add_argument('--model_dir', type=str, default='./model')
     parser.add_argument('--dataset', type=str, default='vstar',
                         choices=['vstar', 'hrbench', 'treebench', 'mme_realworld_lite'])
@@ -132,31 +136,42 @@ def main():
                         help='vLLM batch size for trace generation (larger = better GPU utilization)')
     parser.add_argument('--filtering_ratio', type=float, default=0.4,
                         help='Fraction of low-reliability traces to discard per round (rho in paper)')
-    parser.add_argument('--max_extraction_traces', type=int, default=100,
-                        help='Max traces fed into knowledge extractor')
+    parser.add_argument('--max_ledger_traces', type=int, default=4,
+                        help='Highest-scoring retained traces used to update the Evidence Ledger (m)')
     parser.add_argument('--fresh_exploration_ratio', type=float, default=0.4,
-                        help='Fraction of traces to generate fresh (without knowledge) in each round (alpha in paper)')
-    parser.add_argument('--max_previous_knowledge_chars', type=int, default=20480,
-                        help='Max characters of previous knowledge to include in extraction prompt')
+                        help='Fraction of independent fresh traces after round 1 (alpha in paper)')
+    parser.add_argument('--max_previous_ledger_chars', type=int, default=8192,
+                        help='Maximum previous-ledger characters included in an update prompt')
+    parser.add_argument('--confirmed_ledger_cap', type=int, default=8,
+                        help='Maximum Confirmed Knowledge entries (v_max)')
+    parser.add_argument('--conflict_ledger_cap', type=int, default=4,
+                        help='Maximum Open Conflict entries (u_max)')
 
     # Sampling
-    parser.add_argument('--max_tokens', type=int, default=4096)
+    parser.add_argument('--max_tokens', type=int, default=4096,
+                        help='Maximum generated tokens per interaction turn')
     parser.add_argument('--temperature', type=float, default=None)
     parser.add_argument('--top_p', type=float, default=None)
     parser.add_argument('--top_k', type=int, default=None)
     parser.add_argument('--gamma', type=float, default=None,
                         help='Temperature for reliability-weighted voting (gamma in paper)')
+    parser.add_argument('--entropy_top_k', type=int, default=256,
+                        help='Top decoder probabilities used for truncated entropy (k_top)')
+    parser.add_argument('--critical_positions', type=int, default=128,
+                        help='Highest-entropy positions averaged per trace (k prime)')
     parser.add_argument('--reasoning_effort', type=str, default=None,
                         choices=['low', 'high', None])
 
     # Infrastructure
+    parser.add_argument('--tensor_parallel_size', type=int, default=8,
+                        help='Number of GPUs used for tensor parallelism')
     parser.add_argument('--gpu_memory_utilization', type=float, default=0.95)
-    parser.add_argument('--max_model_len', type=int, default=64000)
+    parser.add_argument('--max_model_len', type=int, default=51200)
     parser.add_argument('--max_questions', type=int, default=None,
                         help='Debug mode: only process first N samples')
     parser.add_argument('--save_zoom_images', action='store_true', default=False)
     parser.add_argument('--save_debug_details', action='store_true', default=False,
-                        help='Save full generated text and extracted knowledge for debugging')
+                        help='Save full generated text and Evidence Ledger details')
 
     args = parser.parse_args()
 
@@ -192,11 +207,13 @@ def main():
     if args.max_questions:
         print(f"DEBUG MODE: Processing only first {args.max_questions} samples per subset")
     if args.save_debug_details:
-        print(f"DEBUG MODE: Saving full text and knowledge details")
+        print("DEBUG MODE: Saving full text and Evidence Ledger details")
     print("="*80)
 
     pipeline = TTSPPipeline(
         model=args.model_path,
+        tensor_parallel_size=args.tensor_parallel_size,
+        max_logprobs=args.entropy_top_k,
         enable_prefix_caching=True,
         gpu_memory_utilization=args.gpu_memory_utilization,
         max_model_len=args.max_model_len,
