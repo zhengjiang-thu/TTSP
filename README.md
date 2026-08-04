@@ -2,8 +2,11 @@
   <img src="figs/logo.png" alt="TTSP logo" height="150">
   <h1>Test-Time Scaling over Perception</h1>
   <p><strong>Resolving the Grounding Paradox in Thinking with Images</strong></p>
-  <a href="https://github.com/jiangz24/TTSP">
-    <img src="https://img.shields.io/badge/GitHub-jiangz24%2FTTSP-black?logo=github" alt="GitHub repository">
+  <a href="https://github.com/jiangz20/TTSP">
+    <img src="https://img.shields.io/badge/GitHub-jiangz20%2FTTSP-black?logo=github" alt="GitHub repository">
+  </a>
+  <a href="https://arxiv.org/abs/2604.11025">
+    <img src="https://img.shields.io/badge/arXiv-2604.11025-b31b1b.svg" alt="arXiv paper">
   </a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 license">
@@ -28,7 +31,7 @@ The current implementation follows the latest paper in four stages:
 ## Installation
 
 ```bash
-git clone https://github.com/jiangz24/TTSP.git
+git clone https://github.com/jiangz20/TTSP.git
 cd TTSP
 
 # Reproduce the development environment.
@@ -171,7 +174,16 @@ python -m unittest discover -s tests -v
 
 ## Paper and citation
 
-The paper link and final BibTeX entry will be added after release metadata is finalized.
+The paper is available on arXiv: [Test-Time Scaling over Perception: Resolving the Grounding Paradox in Thinking with Images](https://arxiv.org/abs/2604.11025).
+
+```bibtex
+@article{jiang2026test,
+  title={Test-Time Scaling over Perception: Resolving the Grounding Paradox in Thinking with Images},
+  author={Jiang, Zheng and Chen, Yiming and He, Nan and Chen, Jiahui and Li, Chaoyang and Qian, Houde and Sun, Lifeng},
+  journal={arXiv preprint arXiv:2604.11025},
+  year={2026}
+}
+```
 
 ## License
 
